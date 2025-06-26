@@ -8,6 +8,6 @@ led = GroveLed(pin)
 # main loop
 while True:
     led.on()
-    time.sleep(0.5)
+    time.sleep(0.05)
     led.off()
-    time.sleep(0.5)
+    time.sleep(0.05)
