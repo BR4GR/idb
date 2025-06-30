@@ -52,21 +52,20 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
 * **Protocols/Communication:**
   * **GPIO (General Purpose Input/Output):** This is the direct hardware interface between the Raspberry Pi Zero and the sensors/LEDs. The `grove.py` library handles this low-level interaction.
   * **HTTP/S (Hypertext Transfer Protocol Secure):** This is the application-layer protocol used for communicating with the backend server.
-    * **Direction:** From the Edge Device to the Cloud/Server.
     * **Method:** `POST` requests are used to send event data (`/arrival` or `/departure`).
-    * **Request Payload:** **No specific payload is sent in the request body.** The server infers the event type from the endpoint URL (e.g., `/arrival`).
+    * **Request Payload:** **No payload is sent, the only information needed is in the routes
     * **Response Payload:** The server responds with a JSON object, indicating success or failure and providing details about the event.
       * **Example `arrival` response (on failure):**
 
-                ```json
-                {"success":false,"message":"Parking spot is already occupied"}
-                ```
+      ```json
+      {"success":false,"message":"Parking spot is already occupied"}
+      ```
 
       * **Example `departure` response (on success):**
 
-                ```json
-                {"success":true,"message":"Car departure recorded","data":{"event_type":"departure","event_time":"2025-06-30T00:33:37.000000Z","id":12}}
-                ```
+      ```json
+      {"success":true,"message":"Car departure recorded","data":{"event_type":"departure","event_time":"2025-06-30T00:33:37.000000Z","id":12}}
+      ```
 
 **Tier 2: Cloud/Server (API)**
 
@@ -78,39 +77,38 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
   * **HTTP/S:** Receives `POST` requests from the Edge Device.
   * **Internal Protocols:** Uses various internal protocols and database drivers to store data.
   * **HTTP/S (GET Requests):** Provides data to the User Interface (Tier 3).
-    * **Direction:** From the Cloud/Server to the User Interface.
     * **Method:** `GET` requests are used to retrieve status or event logs.
     * **Response Payload (Data Format):** The API returns data in JSON format for the user interface.
-      * **Example `/status` response:**
+    * **Example `/status` response:**
 
-                ```json
-                {
-                  "success": true,
-                  "data": {
-                    "occupied": true,
-                    "status": "occupied",
-                    "last_event": {
-                      "id": 11,
-                      "event_type": "arrival",
-                      "event_time": "2025-06-30T00:14:44.000000Z"
-                    }
-                  }
-                }
-                ```
+    ```json
+    {
+      "success": true,
+      "data": {
+        "occupied": true,
+        "status": "occupied",
+        "last_event": {
+          "id": 10,
+          "event_type": "arrival",
+          "event_time": "2024-06-30T00:14:44.000000Z"
+        }
+      }
+    }
+    ```
 
-      * **Example `/events` response:**
+    * **Example `/events` response:**
 
-                ```json
-                {
-                  "success": true,
-                  "data": [
-                    {"id": 12, "event_type": "departure", "event_time": "2025-06-30T00:33:37.000000Z"},
-                    {"id": 11, "event_type": "arrival", "event_time": "2025-06-30T00:14:44.000000Z"},
-                    // ... more events
-                  ],
-                  "total": 12
-                }
-                ```
+    ```json
+    {
+      "success": true,
+      "data": [
+        {"id": 12, "event_type": "departure", "event_time": "2025-06-30T00:33:37.000000Z"},
+        {"id": 11, "event_type": "arrival", "event_time": "2025-06-30T00:14:44.000000Z"},
+        // ... more events
+      ],
+      "total": 12
+    }
+    ```
 
 **Tier 3: User Interface**
 
@@ -124,17 +122,6 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
 ## Program Source Code
 
 The Python script (`parking_api_light.py`) runs on the Raspberry Pi Zero. It continuously monitors the ultrasonic sensor. When the sensor detects a state change (spot becomes occupied or empty), it controls the LED accordingly and sends an HTTP POST request to the cloud API endpoint, effectively logging the event.
-
-## Setup Notes
-
-To run this project:
-
-1. **Hardware:** Raspberry Pi Zero, Grove Base Hat for Pi Zero, Grove Ultrasonic Ranger (Sonar), Grove LED.
-2. **Wiring:**
-    * Ultrasonic Sensor: Grove PWM slot (BCM 12)
-    * LED: Grove D16 slot (BCM 16)
-3. **Software on Pi:** Raspberry Pi OS, Python 3, `grove.py` library, `requests` Python library (`pip install requests`).
-4. **Configuration:** Ensure `DISTANCE_THRESHOLD_CM` in the Python script is calibrated to your physical setup.
 
 ```
 ```
