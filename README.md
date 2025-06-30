@@ -1,54 +1,137 @@
-# idb
+# Smart Parking Spot Indicator (IoT Project)
 
-## setup
+## Project Overview
 
-## easy edditing
+This project demonstrates a simple Internet of Things (IoT) system designed to indicate the occupancy status of a parking spot and report these events to a central server. It utilizes a Raspberry Pi Zero as the edge device, equipped with an ultrasonic distance sensor and an LED, simulating a common application in smart parking garages.
 
-1. Generate an SSH key pair on your PC (if you don't have one):
+## Architecture Diagram: Tiers and Protocols
 
-  ```bash
-  ssh-keygen -t ed25519 -C "your_email@example.com"
-  ```
+The system is structured into three main "Tiers" (Schichten), each interacting using specific protocols and data formats (payloads).
 
-2. Copy the public key to your Raspberry Pi:
++---------------------+
+|      Tier 1:        |
+|  Edge Device (RPI0) |
++---------------------+
+| - Ultrasonic Sensor | <--- Digital GPIO (High/Low Pulses)
+| - LED               | <--- Digital GPIO (High/Low)
+| - Python Script     |
++---------|-----------+
+          |
+          | (HTTP/S POST Requests - JSON Payload)
+          |
++---------|-----------+
+|      Tier 2:        |
+|  Cloud/Server (API) |
++---------------------+
+| - Web Server        |
+| - API Endpoint      |
+| - Database          |
++---------|-----------+
+          |
+          | (HTTP/S GET Requests - JSON Payload)
+          |
++---------|-----------+
+|      Tier 3:        |
+|   User Interface    |
++---------------------+
+| - Web Browser       |
+| - Mobile App (opt.) |
++---------------------+
 
-  ```bash
-  ssh-copy-id username@192.168.101.155
-  ```
+### Explanation of Tiers and Protocols
 
-3. Install SSHFS
+**Tier 1: Edge Device (Raspberry Pi Zero)**
 
-  ```bash
-  sudo pacman -S sshfs
-  ```
+* **Components:**
+  * **Raspberry Pi Zero:** The core computing unit running a Python script.
+  * **Ultrasonic Distance Sensor (Grove):** Detects objects (e.g., a car) by measuring distance. It communicates by measuring the *duration* of a digital pulse.
+  * **LED (Grove):** Provides a visual indicator of the parking spot's status, controlled by setting a digital GPIO pin to HIGH (ON) or LOW (OFF).
+* **Protocols/Communication:**
+  * **GPIO (General Purpose Input/Output):** This is the direct hardware interface between the Raspberry Pi Zero and the sensors/LEDs. The `grove.py` library handles this low-level interaction.
+  * **HTTP/S (Hypertext Transfer Protocol Secure):** This is the application-layer protocol used for communicating with the backend server.
+    * **Direction:** From the Edge Device to the Cloud/Server.
+    * **Method:** `POST` requests are used to send event data (`/arrival` or `/departure`).
+    * **Request Payload:** **No specific payload is sent in the request body.** The server infers the event type from the endpoint URL (e.g., `/arrival`).
+    * **Response Payload:** The server responds with a JSON object, indicating success or failure and providing details about the event.
+      * **Example `arrival` response (on failure):**
 
-4. Create a local mount point:
+                ```json
+                {"success":false,"message":"Parking spot is already occupied"}
+                ```
 
-  ```bash
-  mkdir ~/pi_project
-  ```
+      * **Example `departure` response (on success):**
 
-5. mount the remote directory:
+                ```json
+                {"success":true,"message":"Car departure recorded","data":{"event_type":"departure","event_time":"2025-06-30T00:33:37.000000Z","id":12}}
+                ```
 
-  ```bash
-  sshfs pi@192.168.101.155:/home/username/ ~/pi_project -o reconnect,default_permissions
-  ```
+**Tier 2: Cloud/Server (API)**
 
-- pi@192.168.101.155: Your Raspberry Pi's username and IP address.
-- /home/pi/: The directory on the Raspberry Pi you want to mount (e.g., your home directory on the Pi).
-- ~/pi_project: The local mount point you just created.
-- -o reconnect,default_permissions: Good options to add. reconnect tries to re-establish the connection if it drops. default_permissions tries to map permissions correctly.
+* **Components:** This tier represents a remote server infrastructure.
+  * **Web Server:**  Listens for incoming HTTP/S requests.
+  * **API Endpoint:** A specific URL (`https://dpo.been-jammin.ch/api/parking/...`) designed to receive and process the data.
+  * **Database:** Stores the received parking events (arrival/departure timestamps).
+* **Protocols/Communication:**
+  * **HTTP/S:** Receives `POST` requests from the Edge Device.
+  * **Internal Protocols:** Uses various internal protocols and database drivers to store data.
+  * **HTTP/S (GET Requests):** Provides data to the User Interface (Tier 3).
+    * **Direction:** From the Cloud/Server to the User Interface.
+    * **Method:** `GET` requests are used to retrieve status or event logs.
+    * **Response Payload (Data Format):** The API returns data in JSON format for the user interface.
+      * **Example `/status` response:**
 
-6. now you can in the py create a file or clone a pi_project
+                ```json
+                {
+                  "success": true,
+                  "data": {
+                    "occupied": true,
+                    "status": "occupied",
+                    "last_event": {
+                      "id": 11,
+                      "event_type": "arrival",
+                      "event_time": "2025-06-30T00:14:44.000000Z"
+                    }
+                  }
+                }
+                ```
 
-```bash
-cd pi_project
+      * **Example `/events` response:**
 
-git clone git@github.com:BR4GR/idb.git
+                ```json
+                {
+                  "success": true,
+                  "data": [
+                    {"id": 12, "event_type": "departure", "event_time": "2025-06-30T00:33:37.000000Z"},
+                    {"id": 11, "event_type": "arrival", "event_time": "2025-06-30T00:14:44.000000Z"},
+                    // ... more events
+                  ],
+                  "total": 12
+                }
+                ```
 
-cd idb
+**Tier 3: User Interface**
 
-nvim blinkatest.py
+* **Components:** This is how a human user can interacts with the system.
+  * **Web Browser:** Accesses a web application.
+  * **curl:** from the command line.
+* **Protocols/Communication:**
+  * **HTTPS:** Makes `GET` requests to the /Server API (Tier 2) to fetch parking status or event logs.
+  * **Payload (Data Format):** Receives data in JSON format from the API.
+
+## Program Source Code
+
+The Python script (`parking_api_light.py`) runs on the Raspberry Pi Zero. It continuously monitors the ultrasonic sensor. When the sensor detects a state change (spot becomes occupied or empty), it controls the LED accordingly and sends an HTTP POST request to the cloud API endpoint, effectively logging the event.
+
+## Setup Notes
+
+To run this project:
+
+1. **Hardware:** Raspberry Pi Zero, Grove Base Hat for Pi Zero, Grove Ultrasonic Ranger (Sonar), Grove LED.
+2. **Wiring:**
+    * Ultrasonic Sensor: Grove PWM slot (BCM 12)
+    * LED: Grove D16 slot (BCM 16)
+3. **Software on Pi:** Raspberry Pi OS, Python 3, `grove.py` library, `requests` Python library (`pip install requests`).
+4. **Configuration:** Ensure `DISTANCE_THRESHOLD_CM` in the Python script is calibrated to your physical setup.
+
 ```
-
-check vimnotes.mkdir
+```
