@@ -8,6 +8,8 @@ This project demonstrates a simple Internet of Things (IoT) system designed to i
 
 The system is structured into three main "Tiers" (Schichten), each interacting using specific protocols and data formats (payloads).
 
+```plaintext
+
 +---------------------+
 |      Tier 1:        |
 |  Edge Device (RPI0) |
@@ -37,6 +39,7 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
 | - Web Browser       |
 | - Mobile App (opt.) |
 +---------------------+
+```
 
 ### Explanation of Tiers and Protocols
 
