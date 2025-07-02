@@ -1,0 +1,10 @@
+# IoT Smart Parking Spot Indicator Dependencies
+
+# HTTP requests for API communication
+requests>=2.31.0
+
+# Adafruit hardware abstraction for Raspberry Pi
+adafruit-blinka>=8.0.0
+
+# Note: grove.py library should be installed separately using:
+# curl -sL https://github.com/Seeed-Studio/grove.py/raw/master/install.sh | sudo bash -s -

@@ -53,7 +53,7 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
   * **GPIO (General Purpose Input/Output):** This is the direct hardware interface between the Raspberry Pi Zero and the sensors/LEDs. The `grove.py` library handles this low-level interaction.
   * **HTTP/S (Hypertext Transfer Protocol Secure):** This is the application-layer protocol used for communicating with the backend server.
     * **Method:** `POST` requests are used to send event data (`/arrival` or `/departure`).
-    * **Request Payload:** **No payload is sent, the only information needed is in the routes
+    * **Request Payload:** No payload is sent, the only information needed is in the routes.
     * **Response Payload:** The server responds with a JSON object, indicating success or failure and providing details about the event.
       * **Example `arrival` response (on failure):**
 
@@ -112,16 +112,68 @@ The system is structured into three main "Tiers" (Schichten), each interacting u
 
 **Tier 3: User Interface**
 
-* **Components:** This is how a human user can interacts with the system.
+* **Components:** This is how a human user interacts with the system.
   * **Web Browser:** Accesses a web application.
   * **curl:** from the command line.
 * **Protocols/Communication:**
-  * **HTTPS:** Makes `GET` requests to the /Server API (Tier 2) to fetch parking status or event logs.
+  * **HTTPS:** Makes `GET` requests to the Server API (Tier 2) to fetch parking status or event logs.
   * **Payload (Data Format):** Receives data in JSON format from the API.
 
-## Program Source Code
+## Project Files
 
-The Python script (`parking_api_light.py`) runs on the Raspberry Pi Zero. It continuously monitors the ultrasonic sensor. When the sensor detects a state change (spot becomes occupied or empty), it controls the LED accordingly and sends an HTTP POST request to the cloud API endpoint, effectively logging the event.
+The main application file is `parking_light.py`, which runs on the Raspberry Pi Zero. It continuously monitors the ultrasonic sensor and when the sensor detects a state change (spot becomes occupied or empty), it controls the LED accordingly and sends an HTTP POST request to the cloud API endpoint, effectively logging the event.
 
-```
-```
+### File Structure
+
+- `parking_light.py` - Main parking spot monitoring application with API integration
+- `tea_meter.py` - Alternative sensor application for measuring liquid levels
+- `blink.py` - Simple LED blinking test
+- `dht.py` - Temperature and humidity sensor module
+- Test files:
+  - `blinkatest.py` - Blinka library hardware test
+  - `button_test.py` - Button functionality test
+  - `dht11_test.py` - DHT11 sensor test
+  - `sonar_test.py` - Ultrasonic sensor test
+
+## Hardware Requirements
+
+- Raspberry Pi Zero (or similar)
+- Grove Ultrasonic Distance Sensor
+- Grove LED
+- Grove DHT11 Temperature & Humidity Sensor (optional)
+- Grove Button (for tea meter application)
+- Grove Base Hat or compatible GPIO interface
+
+## Software Dependencies
+
+This project requires the following Python libraries:
+- `grove.py` - Grove sensor library for Raspberry Pi
+- `requests` - For HTTP API communication
+- `time` - Built-in Python time module
+- `board` and `digitalio` (from Adafruit Blinka) - For hardware abstraction
+
+## Installation and Setup
+
+1. Install the required Grove.py library on your Raspberry Pi:
+   ```bash
+   curl -sL https://github.com/Seeed-Studio/grove.py/raw/master/install.sh | sudo bash -s -
+   ```
+
+2. Install additional Python dependencies:
+   ```bash
+   pip3 install requests adafruit-blinka
+   ```
+
+3. Connect your Grove sensors to the appropriate pins as defined in the code
+4. Run the main application:
+   ```bash
+   python3 parking_light.py
+   ```
+
+## API Integration
+
+The system integrates with a remote API at `https://dpo.been-jammin.ch/api/parking/` with the following endpoints:
+- `POST /arrival` - Records when a car arrives
+- `POST /departure` - Records when a car leaves  
+- `GET /status` - Gets current parking spot status
+- `GET /events` - Gets historical parking events
